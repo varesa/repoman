@@ -1,0 +1,7 @@
+[repoman]
+mirror_root=/tmp/repoman/data
+timeline_root=/tmp/repoman/data
+repoconf_dir=/etc/repoman/repos.d
+createrepo_cache_root=/tmp/repoman/createrepo
+user=oranenj
+group=oranenj
