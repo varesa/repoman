@@ -1,0 +1,14 @@
+[rhel-7-x86_64-optional]
+# refers to auth/rhel-server in repoman.conf
+auth = rhel-server
+name = Redhat Enterprise Linux Server 7 - optional (x86_64)
+url = https://cdn.redhat.com/content/dist/rhel/server/7/7Server/x86_64/optional/os
+# path relative to mirror_root
+path = latest/rhel-7-x86_64-optional
+# override global default
+createrepo = false
+exclude = /debug/
+# options to sync_command (reposync, in this case)
+sync_opts = --norepopath --tempcache
+
+# rsync:// urls should also work, but I haven't tested them :-)
