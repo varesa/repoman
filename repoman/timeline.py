@@ -255,7 +255,7 @@ Excludes: {excludes}""".format(**tldata)
         if not os.path.isdir(deleted_snapshot['path']):
             # Nothing to do anymore
             return
-        del_path = os.path.join(_self_destination, '_repoman_to_be_deleted')
+        del_path = os.path.join(self._destination, '_repoman_to_be_deleted')
         tgt_path = os.path.join(del_path, snapshot)
         os.mkdir(del_path)
         os.rename(deleted_snapshot['path'], tgt_path)
@@ -569,7 +569,7 @@ Excludes: {excludes}""".format(**tldata)
                 'sleeping for [{0}] seconds'.format(sleep_after_snapshot))
             time.sleep(sleep_after_snapshot)
 
-    def delete_snapshot(self, snapshot):
+    def delete_snapshot(self, snapshot, skip_linked=False):
         """ deletes the given snapshot and handles links appropriately
 
                 no action is taken if the timeline has been frozen!
@@ -582,19 +582,12 @@ Excludes: {excludes}""".format(**tldata)
 
         # handle links
         snapshot_links = self._snapshots[snapshot]['links'][:]
-        if not self._snapshot_is_named(snapshot):
-            for link in snapshot_links:
-                # if we are deleting the last snapshot we should also delete
-                # the links
-                if len(self._lsnapshots) == 1:
-                    self.delete_link(link)
-                else:
-                    self.update_link(
-                        link, self._get_neighbour_snapshot(snapshot))
-            self._lsnapshots.remove(snapshot)
-        elif len(snapshot_links) > 0:
-            raise ValueError(
-                "Snapshot has links that must be deleted first: {0}".format(snapshot_links))
+        if len(snapshot_links) == 0:
+            if not self._snapshot_is_named(snapshot):
+                self._lsnapshots.remove(snapshot)
+        else:
+            if not skip_linked:
+                raise ValueError("Snapshot to be deleted must not have links: {0}".format(snapshot_links))
 
         deleted_snapshot = self._snapshots.pop(snapshot)
         self.save()
@@ -730,16 +723,15 @@ Excludes: {excludes}""".format(**tldata)
                 links are handled appropriately
         """
 
-        # remove oldest snapshot(s)
-        while len(self._lsnapshots) > self._max_snapshots:
-            self.delete_snapshot(self._lsnapshots[0])
-
         # update all links to be kept pinned within their <max_offset>
         for lk, link in self._links.items():
             if link['max_offset']:
                 if self._get_snapshot_offset(link['snapshot']) > link['max_offset']:
-                    #self.update_link( lk, self._get_neighbour_snapshot( link[ 'snapshot' ] ))
                     self.update_link(lk, self._lsnapshots[-link['max_offset']])
+
+        # remove oldest snapshot(s)
+        while len(self._lsnapshots) > self._max_snapshots:
+            self.delete_snapshot(self._lsnapshots[0], skip_linked=True)
 
     def consistency_check(self):
         """ looks for missing snapshots and missing links and fixes metadata appropriately """

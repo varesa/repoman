@@ -35,9 +35,10 @@ def make_parser():
     snap_rename = subparsers.add_parser(
         'snapshot-rename', help='old_name new_name')
     snap_list = subparsers.add_parser('snapshot-list', help='-')
-    link_set = subparsers.add_parser('link-set',  help='link_name snapshot')
+    link_set = subparsers.add_parser('link-create',  help='link_name snapshot')
     link_delete = subparsers.add_parser('link-delete', help='link')
     link_list = subparsers.add_parser('link-list', help='-')
+    link_update = subparsers.add_parser('link-update', help='-')
 
     tline_create = subparsers.add_parser(
         'timeline-create', help='name source_path')
@@ -50,7 +51,7 @@ def make_parser():
     repo_list = subparsers.add_parser('repo-list', help='-')
     repo_sync = subparsers.add_parser('repo-sync', help='[glob1] [glob2] ...')
 
-    for p in [snap_create, snap_delete, snap_rename, snap_list, link_set, link_delete, link_list]:
+    for p in [snap_create, snap_delete, snap_rename, snap_list, link_set, link_delete, link_list, link_update]:
         p.add_argument('-t', '--timeline', metavar='TIMELINE',
                        default='default', help='Timeline to operate on')
 
@@ -67,6 +68,11 @@ def make_parser():
     link_set.add_argument('link_name')
     link_set.add_argument('snapshot', nargs='?', default=None)
     link_set.add_argument('--max-offset', default=None, type=int)
+
+    link_delete.add_argument('link_name')
+
+    link_update.add_argument('link_name')
+    link_update.add_argument('snapshot', nargs='?', default=None)
 
     tline_create.add_argument('name')
     tline_create.add_argument('source_path')
@@ -85,7 +91,7 @@ def make_parser():
                        help="Act on repos not synced in DAYS days")
         p.add_argument('-u', '--unsynced-only', action='store_true', default=False, help="Act on unsynced repos")
 
-    for p in [snap_create, snap_delete, snap_rename, snap_list, link_set, link_delete, link_list, tline_create, tline_delete, tline_rename, tline_list, tline_show, repo_list, repo_sync]:
+    for p in [snap_create, snap_delete, snap_rename, snap_list, link_set, link_delete, link_list, link_update, tline_create, tline_delete, tline_rename, tline_list, tline_show, repo_list, repo_sync]:
         p.add_argument('--verbose', '-v', action='store_true', default=False)
 
     return parser
@@ -210,11 +216,15 @@ def timeline_show(args, config):
 
 
 # link_set
-def link_set(args, config):
+def link_create(args, config):
     switch_user(config)
     t = get_timeline(args)
     t.create_link(link=args.link_name, snapshot=args.snapshot, max_offset=args.max_offset)
 
+def link_update(args, config):
+    switch_user(config)
+    t = get_timeline(args)
+    t.update_link(link=args.link_name, snapshot=args.snapshot)
 
 def link_delete(args, config):
     switch_user(config)
