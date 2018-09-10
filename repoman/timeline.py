@@ -164,7 +164,7 @@ Excludes: {excludes}""".format(**tldata)
     def print_links(self):
         print("{0:<20} {1:<20} {2:<20}".format(
             'LINK', 'SNAPSHOT', 'SNAPSHOT_CREATED'))
-        for k, v in sorted(self._links):
+        for k, v in sorted(self._links.items()):
             snap = self._snapshots.get(v['snapshot'], None)
             date = "Invalid snapshot"
             if snap:
