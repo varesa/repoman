@@ -1,0 +1,6 @@
+[testrepo]
+name = test-repo
+url = dnf::http://mirror.centos.org/centos/7/centosplus/x86_64/
+path = latest/test-repo
+exclude = *kernel*,*postgres*
+createrepo = false

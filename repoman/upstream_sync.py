@@ -240,6 +240,42 @@ def sync_cmd_reposync(tmp_dir, repo, keep_deleted, verbose):
     sync_cmd = ['reposync'] + reposync_opts
     return sync_cmd
 
+def sync_cmd_dnf(repo, keep_deleted, verbose):
+    sslcacert = None
+    sslcert = None
+    sslkey = None
+    exclude = None
+
+    dnf_opts = ['--disablerepo=*', '--refresh']
+
+    name = repo['name']
+    url = re.sub('^dnf::', '', repo['url'])
+    path = os.path.abspath(repo['path'])
+    dnf_reponame = os.path.basename(path)
+
+    if repo.has_key('auth'):
+        auth = repo['auth']
+        dnf_opts.append('--setopt=sslcacert={}'.format(auth['sslcacert']))
+        dnf_opts.append('--setopt=sslclientcert={}'.format(auth['sslcert']))
+        dnf_opts.append('--setopt=sslclientkey={}'.format(auth['sslkey']))
+
+    if repo.has_key('exclude'):
+        dnf_opts.extend(('-x', repo['exclude']))
+
+    dnf_opts.extend(('--repofrompath', '{0},{1}'.format(dnf_reponame, url)))
+
+    if repo.has_key('sync_opts'):
+        opt_list = repo['sync_opts'].split()
+        for opt in opt_list:
+            dnf_opts.append(opt)
+
+    # be quiet if verbose is not set
+    if not verbose:
+        dnf_opts.append('-q')
+
+    sync_cmd = ['dnf'] + dnf_opts + ['reposync', '-p', os.path.dirname(path)]
+    return sync_cmd
+
 
 def sync_cmd_rhnget(repo):
     systemid = os.path.join(os.path.split(repo['path'])[0], 'systemid')
@@ -381,6 +417,8 @@ def sync_repos(config, args):
         if re.match('^(http|https|ftp)://', url):
             # FIXME: tmp_dir is ugly
             sync_cmd = sync_cmd_reposync(tmp_dir, repo, keep_deleted, args.verbose)
+        elif re.match('^dnf::(http|https|ftp)://', url):
+            sync_cmd = sync_cmd_dnf(repo, keep_deleted, args.verbose)
         elif re.match('^rhns:///', url):
             sync_cmd = sync_cmd_rhnget(repo)
         elif re.match('^you://', url):
