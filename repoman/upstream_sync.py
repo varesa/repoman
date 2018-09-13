@@ -119,7 +119,7 @@ def match_synced(older_than, unsynced_only, repo):
         mtime = datetime.datetime.fromtimestamp(st.st_mtime)
     else:
         mtime = epoch
-    return (mtime > epoch and mtime < agelimit and not unsynced_only) or (mtime == epoch and unsynced_only)
+    return (mtime > epoch and mtime < agelimit and not unsynced_only) or (mtime == epoch)
 
 
 def filter_repos(repos, config):
