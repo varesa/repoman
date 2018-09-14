@@ -13,6 +13,7 @@ import datetime
 import glob
 import fnmatch
 import logging
+import tempfile
 
 logging.basicConfig()
 logger = logging.getLogger('repoman.upstream_sync')
@@ -37,12 +38,7 @@ def make_dir(dir_path, mode=None):
             sys.exit(1)
 
 
-def build_yum_config(tmp_dir, name, url, sslcacert, sslcert, sslkey, exclude):
-    # Check tmp path exist
-    make_dir(tmp_dir)
-    repo_conf = os.path.join(tmp_dir, '{0}.repo'.format(name))
-
-    f = open(repo_conf, 'w')
+def build_yum_config(f, name, url, sslcacert, sslcert, sslkey, exclude):
     f.write('[main]\n')
     f.write('reposdir=/dev/null\n')
     f.write('[{0}]\n'.format(name))
@@ -62,10 +58,7 @@ def build_yum_config(tmp_dir, name, url, sslcacert, sslcert, sslkey, exclude):
         f.write('exclude = {0}\n'.format(exclude))
 
     f.write('metadata_expire = 60\n')
-
-    f.close()
-
-    return repo_conf
+    f.flush()
 
 
 def check_sslcert_expiration(sslcert):
@@ -169,7 +162,7 @@ def config_repos(config, args):
     return filter_repos(repos, args)
 
 
-def sync_cmd_reposync(tmp_dir, repo, keep_deleted, verbose):
+def sync_cmd_reposync(repo, keep_deleted, verbose):
     sslcacert = None
     sslcert = None
     sslkey = None
@@ -193,10 +186,11 @@ def sync_cmd_reposync(tmp_dir, repo, keep_deleted, verbose):
         if exclude_list:
             exclude = ' '.strip().join(exclude_list)
 
-    yum_conf = build_yum_config(
-        tmp_dir, name, url, sslcacert, sslcert, sslkey, exclude)
+    yum_conf = tempfile.NamedTemporaryFile(prefix='repoman.tmp', delete=True)
+    tmppath = yum_conf.name
+    build_yum_config(yum_conf, name, url, sslcacert, sslcert, sslkey, exclude)
 
-    reposync_opts.extend(('-c', yum_conf))
+    reposync_opts.extend(('-c', tmppath))
     reposync_opts.extend(('-r', name))
     if not keep_deleted:
         reposync_opts.append('--delete')
@@ -238,7 +232,8 @@ def sync_cmd_reposync(tmp_dir, repo, keep_deleted, verbose):
         reposync_opts.append('-q')
 
     sync_cmd = ['reposync'] + reposync_opts
-    return sync_cmd
+    return (yum_conf, sync_cmd)
+
 
 def sync_cmd_dnf(repo, keep_deleted, verbose):
     sslcacert = None
@@ -413,10 +408,10 @@ def sync_repos(config, args):
             createrepo_opts = ['-g', comps_file] + createrepo_opts
 
         createrepo_cmd = createrepo_exec + createrepo_opts
+        tmpfile = None
 
         if re.match('^(http|https|ftp)://', url):
-            # FIXME: tmp_dir is ugly
-            sync_cmd = sync_cmd_reposync(tmp_dir, repo, keep_deleted, args.verbose)
+            tmpfile, sync_cmd = sync_cmd_reposync(repo, keep_deleted, args.verbose)
         elif re.match('^dnf::(http|https|ftp)://', url):
             sync_cmd = sync_cmd_dnf(repo, keep_deleted, args.verbose)
         elif re.match('^rhns:///', url):
@@ -450,6 +445,8 @@ def sync_repos(config, args):
         p1 = subprocess.Popen(sync_cmd, stdout=stdout_pipe,
                               stderr=stderr_pipe, stdin=subprocess.PIPE)
         p1_rc = p1.wait()
+        if tmpfile:
+            tmpfile.close()
         stdout, _ = p1.communicate()
 
         # display output if the sync fails

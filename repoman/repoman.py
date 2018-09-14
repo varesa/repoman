@@ -221,10 +221,12 @@ def link_create(args, config):
     t = get_timeline(args)
     t.create_link(link=args.link_name, snapshot=args.snapshot, max_offset=args.max_offset)
 
+
 def link_update(args, config):
     switch_user(config)
     t = get_timeline(args)
     t.update_link(link=args.link_name, snapshot=args.snapshot)
+
 
 def link_delete(args, config):
     switch_user(config)
