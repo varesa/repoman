@@ -1,6 +1,9 @@
 #!/usr/bin/env/python2
 from __future__ import print_function
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 import timeline
 import argparse
 import upstream_sync
@@ -8,11 +11,9 @@ import ConfigParser
 import os
 import pwd
 import grp
-import logging
 import subprocess
 from sys import exit
 
-logging.basicConfig()
 
 
 def debug(*args):
@@ -66,7 +67,7 @@ def make_parser():
     snap_rename.add_argument('old_name')
     snap_rename.add_argument('new_name')
 
-    snap_expire.add_argument('older_than_days', nargs=1, default=7, type=int, help="Expire snapshots older than N days (default: 7). Will not delete snapshots with links pointing to them")
+    snap_expire.add_argument('older_than_days', default=7, type=int, help="Expire snapshots older than N days (default: 7). Will not delete snapshots with links pointing to them")
     snap_expire.add_argument(
         '--dry-run', '-n', action='store_true', default=False)
 
@@ -96,7 +97,7 @@ def make_parser():
                        help="Act on repos not synced in DAYS days")
         p.add_argument('-u', '--unsynced-only', action='store_true', default=False, help="Act on unsynced repos")
 
-    for p in [snap_create, snap_delete, snap_rename, snap_list, link_set, link_delete, link_list, link_update, tline_create, tline_delete, tline_rename, tline_list, tline_show, repo_list, repo_sync]:
+    for p in [snap_create, snap_delete, snap_rename, snap_list, snap_expire, link_set, link_delete, link_list, link_update, tline_create, tline_delete, tline_rename, tline_list, tline_show, repo_list, repo_sync]:
         p.add_argument('--verbose', '-v', action='store_true', default=False)
 
     return parser

@@ -16,7 +16,6 @@ import ConfigParser
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
 
-
 def isalnum(string, allowed_extra_chars=''):
     """ check if the given string only contains alpha-numeric characters + optionally allowed extra chars """
 
@@ -34,6 +33,7 @@ class Timeline:
     _difflog_ext = '.diff.log'
 
     def __init__(self, name, source, destination):
+        self.logger = logging.getLogger('timeline.{0}'.format(name))
         """ create a new timeline instance for a given source directory
 
                 ARGUMENTS:
@@ -55,9 +55,6 @@ class Timeline:
 
         if not os.path.exists(destination):
             os.makedirs(destination)
-
-        # create a logger for the current instance
-        self.logger = logging.getLogger('Timeline.{0}'.format(name))
 
         # define "private" variables
         self._name = name
@@ -264,7 +261,7 @@ Excludes: {excludes}""".format(**tldata)
     def _save_state(self):
         """ saves current timeline state into file """
 
-        self.logger.info('saving current timeline state...')
+        self.logger.debug('saving current timeline state...')
         fh = open(self._datafile, 'w')
         #pickle.dump( self, fh )
         d = self.__dict__.copy()  # copy the dict since we will change it
@@ -588,6 +585,8 @@ Excludes: {excludes}""".format(**tldata)
         else:
             if not skip_linked:
                 raise ValueError("Snapshot to be deleted must not have links: {0}".format(snapshot_links))
+            # Do not do anything
+            return
 
         deleted_snapshot = self._snapshots.pop(snapshot)
         self.save()
@@ -600,15 +599,17 @@ Excludes: {excludes}""".format(**tldata)
     def expire_snapshots(self, older_than_days, dryrun=False):
         self.logger.info('expiring snapshots older than %s days', older_than_days)
         to_be_deleted = []
-        for k, v in self.snapshots.items():
+        for k, v in self._snapshots.items():
             if v['created'] < datetime.today() - timedelta(days=older_than_days):
+                if not len(v['links']) == 0:
+                    self.logger.info("Skipping snapshot %s due to links", k)
+                    continue
                 if dryrun:
-                    self.logger.info("Would delete snapshot %s", snap['path'])
+                    self.logger.info("Would delete snapshot %s", v['path'])
                 else:
                     to_be_deleted.append(k)
         for snap in to_be_deleted:
-            self.logger.info("Deleting snapshot %s", snap['path'])
-            # self.delete_snapshot(snap, True) # skip_linked
+            self.delete_snapshot(snap, True) # skip_linked
 
 
     def create_link(self, link, snapshot=None, max_offset=0, warn_before_max_offset=0):
@@ -672,7 +673,10 @@ Excludes: {excludes}""".format(**tldata)
 
         # remove link from snapshot
         snapshot = self._links[link]['snapshot']
-        self._snapshots[snapshot]['links'].remove(link)
+        try:
+            self._snapshots[snapshot]['links'].remove(link)
+        except KeyError:
+            self.logger.warning("Snapshot %s missing while deleting link", snapshot)
 
         deleted_link = self._links.pop(link)
         self.save()
