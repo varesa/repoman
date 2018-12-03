@@ -35,6 +35,7 @@ def make_parser():
     snap_rename = subparsers.add_parser(
         'snapshot-rename', help='old_name new_name')
     snap_list = subparsers.add_parser('snapshot-list', help='-')
+    snap_expire = subparsers.add_parser('snapshot-expire', help='-')
     link_set = subparsers.add_parser('link-create',  help='link_name snapshot')
     link_delete = subparsers.add_parser('link-delete', help='link')
     link_list = subparsers.add_parser('link-list', help='-')
@@ -51,7 +52,7 @@ def make_parser():
     repo_list = subparsers.add_parser('repo-list', help='-')
     repo_sync = subparsers.add_parser('repo-sync', help='[glob1] [glob2] ...')
 
-    for p in [snap_create, snap_delete, snap_rename, snap_list, link_set, link_delete, link_list, link_update]:
+    for p in [snap_create, snap_delete, snap_rename, snap_list, snap_expire, link_set, link_delete, link_list, link_update]:
         p.add_argument('-t', '--timeline', metavar='TIMELINE',
                        default='default', help='Timeline to operate on')
 
@@ -64,6 +65,10 @@ def make_parser():
 
     snap_rename.add_argument('old_name')
     snap_rename.add_argument('new_name')
+
+    snap_expire.add_argument('older_than_days', nargs=1, default=7, type=int, help="Expire snapshots older than N days (default: 7). Will not delete snapshots with links pointing to them")
+    snap_expire.add_argument(
+        '--dry-run', '-n', action='store_true', default=False)
 
     link_set.add_argument('link_name')
     link_set.add_argument('snapshot', nargs='?', default=None)
@@ -175,6 +180,12 @@ def snapshot_delete(args, config):
     t = timeline.Timeline.load(timeline_path(args.timeline))
     snap_path = snapshot_path(args.timeline, args.name)
     t.delete_snapshot(snapshot=args.name)
+
+def snapshot_expire(args, config):
+    switch_user(config)
+    t = timeline.Timeline.load(timeline_path(args.timeline))
+    t.expire_snapshots(args.older_than_days, args.dry_run)
+
 
 # snapshot_rename
 
