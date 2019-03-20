@@ -5,6 +5,8 @@ repoconf_dir=/etc/repoman/repos.d
 createrepo_cache_root=/repoman/data/createrepo
 # delete packages not in source repo
 sync_keep_deleted = false
+# Download only newest (defaults to true; only affects yum downloader for now)
+newest_only = true
 # repoman drops privileges to this user/group when run as root
 user=apache
 group=apache

@@ -262,6 +262,7 @@ def main():
         'createrepo_cache_root': '',
         'createrepo_bin': 'createrepo_c',
         'sync_keep_deleted': 'false',
+        'newest_only': 'true',
     }
 
     global TIMELINE_ROOT, MIRROR_ROOT

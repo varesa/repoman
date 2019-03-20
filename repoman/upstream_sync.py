@@ -162,7 +162,7 @@ def config_repos(config, args):
     return filter_repos(repos, args)
 
 
-def sync_cmd_reposync(repo, keep_deleted, verbose):
+def sync_cmd_reposync(repo, keep_deleted, newest_only, verbose):
     sslcacert = None
     sslcert = None
     sslkey = None
@@ -225,7 +225,8 @@ def sync_cmd_reposync(repo, keep_deleted, verbose):
         reposync_opts.append('--tempcache')
         reposync_opts.append('--norepopath')
         reposync_opts.append('--downloadcomps')
-        reposync_opts.append('--newest-only')
+        if newest_only:
+            reposync_opts.append('--newest-only')
 
     # be quiet if verbose is not set
     if not verbose:
@@ -235,7 +236,7 @@ def sync_cmd_reposync(repo, keep_deleted, verbose):
     return (yum_conf, sync_cmd)
 
 
-def sync_cmd_dnf(repo, keep_deleted, verbose):
+def sync_cmd_dnf(repo, keep_deleted, newest_only, verbose):
     sslcacert = None
     sslcert = None
     sslkey = None
@@ -374,6 +375,7 @@ def sync_repos(config, args):
     createrepo_cache_root = config.get('repoman', 'createrepo_cache_root')
     createrepo_exec = [config.get('repoman', 'createrepo_bin')]
     keep_deleted = config.getboolean('repoman', 'sync_keep_deleted')
+    newest_only = config.getboolean('repoman', 'newest_only')
     tmp_dir = config.get('repoman', 'tmp_dir')
 
     repos = config_repos(config, args)
@@ -411,9 +413,9 @@ def sync_repos(config, args):
         tmpfile = None
 
         if re.match('^(http|https|ftp)://', url):
-            tmpfile, sync_cmd = sync_cmd_reposync(repo, keep_deleted, args.verbose)
+            tmpfile, sync_cmd = sync_cmd_reposync(repo, keep_deleted, newest_only, args.verbose)
         elif re.match('^dnf::(http|https|ftp)://', url):
-            sync_cmd = sync_cmd_dnf(repo, keep_deleted, args.verbose)
+            sync_cmd = sync_cmd_dnf(repo, keep_deleted, newest_only, args.verbose)
         elif re.match('^rhns:///', url):
             sync_cmd = sync_cmd_rhnget(repo)
         elif re.match('^you://', url):
