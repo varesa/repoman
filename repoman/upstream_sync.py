@@ -41,6 +41,7 @@ def make_dir(dir_path, mode=None):
 def build_yum_config(f, name, url, sslcacert, sslcert, sslkey, exclude):
     f.write('[main]\n')
     f.write('reposdir=/dev/null\n')
+    f.write('deltarpm = 0\n')
     f.write('[{0}]\n'.format(name))
     f.write('name = {0}\n'.format(name))
     f.write('baseurl = {0}\n'.format(url))
