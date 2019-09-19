@@ -2,3 +2,4 @@
 build/
 dist/
 Makefile
+repoman.egg-info
