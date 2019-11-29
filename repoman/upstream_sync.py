@@ -38,7 +38,7 @@ def make_dir(dir_path, mode=None):
             sys.exit(1)
 
 
-def build_yum_config(f, name, url, sslcacert, sslcert, sslkey, exclude):
+def build_yum_config(f, name, url, sslcacert, sslcert, sslkey, exclude, includepkgs):
     f.write('[main]\n')
     f.write('reposdir=/dev/null\n')
     f.write('deltarpm = 0\n')
@@ -57,6 +57,9 @@ def build_yum_config(f, name, url, sslcacert, sslcert, sslkey, exclude):
 
     if exclude:
         f.write('exclude = {0}\n'.format(exclude))
+    
+    if includepkgs:
+        f.write('includepkgs = {0}\n'.format(includepkgs))
 
     f.write('metadata_expire = 60\n')
     f.flush()
@@ -168,6 +171,7 @@ def sync_cmd_reposync(repo, keep_deleted, newest_only, verbose):
     sslcert = None
     sslkey = None
     exclude = None
+    includepkgs = None
 
     reposync_opts = []
 
@@ -187,9 +191,15 @@ def sync_cmd_reposync(repo, keep_deleted, newest_only, verbose):
         if exclude_list:
             exclude = ' '.join([item.strip() for item in exclude_list])
 
+    if repo.has_key('includepkgs'):
+        include_list = repo['includepkgs'].split(',')
+        # split() will return an empty list element
+        if include_list:
+            includepkgs = ' '.join([item.strip() for item in include_list])
+
     yum_conf = tempfile.NamedTemporaryFile(prefix='repoman.tmp', delete=True)
     tmppath = yum_conf.name
-    build_yum_config(yum_conf, name, url, sslcacert, sslcert, sslkey, exclude)
+    build_yum_config(yum_conf, name, url, sslcacert, sslcert, sslkey, exclude, includepkgs)
 
     reposync_opts.extend(('-c', tmppath))
     reposync_opts.extend(('-r', name))
