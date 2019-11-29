@@ -185,7 +185,7 @@ def sync_cmd_reposync(repo, keep_deleted, newest_only, verbose):
         exclude_list = repo['exclude'].split(',')
         # split() will return an empty list element
         if exclude_list:
-            exclude = ' '.strip().join(exclude_list)
+            exclude = ' '.join([item.strip() for item in exclude_list])
 
     yum_conf = tempfile.NamedTemporaryFile(prefix='repoman.tmp', delete=True)
     tmppath = yum_conf.name
